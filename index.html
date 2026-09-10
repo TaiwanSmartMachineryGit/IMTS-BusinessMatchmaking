@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TAITRA Smart Match — IMTS 2026</title>
+<style>
+:root{
+  --bg:#d9f0f7; --panel:rgba(255,255,255,.88); --panel2:rgba(236,248,252,.92); --text:#194c97; --muted:#5e7fa8;
+  --line:#b8dce9; --good:#55b9c8; --warn:#e8bd62; --accent:#2f6fb3; --danger:#c87079;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#eef9fc 0%,#cfeaf3 42%,#9ed4e6 100%);color:var(--text);
+font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",Arial,sans-serif}
+header{position:sticky;top:0;z-index:3;background:rgba(238,249,252,.90);backdrop-filter:blur(10px);
+border-bottom:1px solid var(--line);padding:16px 20px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:1180px;margin:auto}
+.brand h1{font-size:20px;margin:0}.brand small{color:var(--muted)}
+.wrap{max-width:1180px;margin:auto;padding:24px 18px 60px}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+border-radius:18px;padding:18px;box-shadow:0 16px 38px rgba(37,91,133,.13)}
+aside.card{position:sticky;top:92px;max-height:calc(100vh - 112px);overflow:auto}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+input,select{width:100%;background:rgba(255,255,255,.82);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}.tag{border:1px solid var(--line);background:rgba(255,255,255,.72);color:#2f639d;
+border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer;user-select:none}
+.tag.active{background:#c8eaf4;border-color:#5faecb;color:#174d92;box-shadow:0 0 0 1px rgba(95,174,203,.08) inset}
+button{border:0;border-radius:12px;padding:11px 14px;font-weight:700;cursor:pointer}
+.primary{background:var(--accent);color:white}.ghost{background:#e8f4f8;color:var(--text);border:1px solid var(--line)}
+.good{background:var(--good);color:white}.website{display:block;text-decoration:none;background:#dceef7;color:#245f94;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-weight:700}.danger{background:#f7e7e9;color:#a34f59;border:1px solid #e7bdc2}
+.matches{display:grid;gap:14px}.match{display:grid;grid-template-columns:86px minmax(0,1fr) 128px;gap:14px;align-items:center;
+padding:16px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.62)}
+.score{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font-size:20px;font-weight:800;
+background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:relative}
+.score:after{content:"";position:absolute;inset:7px;border-radius:50%;background:#f7fcfd}
+.score span{position:relative;z-index:1}.match h3{margin:0 0 4px;font-size:17px}.meta{color:var(--muted);font-size:13px}
+.why{margin-top:8px;color:#375f8f;font-size:13px;line-height:1.5}.actions{display:flex;flex-direction:column;gap:8px;align-items:stretch;justify-content:center;min-width:128px}.actions button,.actions a{width:100%;text-align:center}
+.section-title{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}
+.section-title h2{margin:0;font-size:20px}.pill{font-size:12px;color:#4b739f;border:1px solid var(--line);background:rgba(255,255,255,.45);padding:6px 10px;border-radius:999px}
+.hero{margin-bottom:20px}.hero h2{font-size:30px;margin:0 0 6px}.hero p{margin:0;color:var(--muted)}
+.note{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.5}
+.small-note{margin-top:8px;color:var(--muted);font-size:11px;line-height:1.45}
+.match-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.match-tag{font-size:11px;padding:4px 7px;border-radius:999px;background:#e1f2f7;border:1px solid #b8dce9;color:#2a6a9d}
+.flagship{display:inline-block;margin-left:6px;font-size:10px;padding:2px 6px;border-radius:999px;background:#d8edf6;border:1px solid #9ecddd;color:#245f94;vertical-align:1px}
+.empty{padding:28px;border:1px dashed var(--line);border-radius:14px;text-align:center;color:var(--muted);background:rgba(255,255,255,.45)}
+.modal{display:none;position:fixed;inset:0;background:rgba(26,76,120,.30);z-index:10;align-items:center;justify-content:center;padding:18px}
+.modal .box{max-width:520px;width:100%;background:#f7fcfd;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(37,91,133,.18)}
+.timegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.time{background:#e7f4f8;color:var(--text);border:1px solid var(--line)}
+@media(max-width:820px){
+  .grid{grid-template-columns:1fr}
+  aside.card{position:static;max-height:none;overflow:visible}
+  .match{grid-template-columns:70px 1fr}
+  .actions{grid-column:1/-1;flex-direction:row;justify-content:flex-end;min-width:0}.actions button,.actions a{width:auto}
+  .score{width:64px;height:64px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div><h1>TAITRA Smart Match</h1><small>IMTS 2026 · Taiwan Flagship Showcase</small></div>
+    <div class="pill"><span id="supplierCount">56</span> Taiwan suppliers</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <h2><strong>Find Your Taiwan Manufacturing Match</strong></h2>
+    <p>Quickly match your needs with the right Taiwan suppliers in machine tools, smart manufacturing, and precision components.</p>
+  </div>
+
+  <div class="grid">
+    <aside class="card">
+      <h3 style="margin-top:0">Buyer Information</h3>
+
+      <label>Company</label>
+      <input id="company" placeholder="Company name"/>
+
+      <label>Buyer Type</label>
+      <select id="buyerType">
+        <option value="">Select buyer type</option>
+        <option>Distributor / Dealer</option>
+        <option>System Integrator</option>
+        <option>End User</option>
+        <option>OEM / Machine Builder</option>
+      </select>
+
+      <label>Partnership Goal</label>
+      <div class="tags" id="goals">
+        <span class="tag">Distribution</span>
+        <span class="tag">OEM Sourcing</span>
+        <span class="tag">Turnkey Integration</span>
+        <span class="tag">Technology Partnership</span>
+      </div>
+
+      <div style="height:1px;background:var(--line);margin:22px 0 18px"></div>
+      <h3 style="margin:0 0 4px">What Are You Looking For?</h3>
+
+      <label>Application Industries</label>
+      <div class="small-note" style="margin:0 0 7px">Where should the solution be applied?</div>
+      <div class="tags" id="industries">
+        <span class="tag active">Aerospace</span>
+        <span class="tag active">Semiconductor</span>
+        <span class="tag">Automotive &amp; Mobility</span>
+        <span class="tag">Medical / Dental</span>
+        <span class="tag">Electronics / 3C</span>
+        <span class="tag">Mold &amp; Die</span>
+        <span class="tag">Energy &amp; Power</span>
+        <span class="tag">Robotics</span>
+        <span class="tag">Construction &amp; Heavy Equipment</span>
+        <span class="tag">Marine &amp; Shipbuilding</span>
+        <span class="tag">Oil &amp; Gas / Petrochemical</span>
+      </div>
+
+      <label>Solutions Needed</label>
+      <div class="small-note" style="margin:0 0 7px">What do you want to improve or solve?</div>
+      <div class="tags" id="solutions">
+        <span class="tag">Improve Precision & Quality</span>
+        <span class="tag">Increase Productivity</span>
+        <span class="tag">Automate Production</span>
+        <span class="tag">Handle Complex Parts</span>
+        <span class="tag">Improve Surface Finish</span>
+        <span class="tag">Optimize Tool Management</span>
+        <span class="tag">Improve Motion & Positioning</span>
+        <span class="tag">Reduce Energy & Operating Costs</span>
+        <span class="tag">Improve Factory Safety & Material Handling</span>
+      </div>
+
+      <label>Looking for</label>
+      <div class="small-note" style="margin:0 0 7px">What technologies or capabilities do you need?</div>
+      <div class="tags" id="needs">
+        <span class="tag active">5-Axis Machining</span>
+        <span class="tag">Milling</span>
+        <span class="tag">Turning</span>
+        <span class="tag active">Grinding</span>
+        <span class="tag">EDM</span>
+        <span class="tag">Drilling &amp; Sawing</span>
+        <span class="tag">Broaching</span>
+        <span class="tag">Punching</span>
+        <span class="tag">Slitting</span>
+        <span class="tag">Cutting Tools</span>
+        <span class="tag">Tooling &amp; Workholding</span>
+        <span class="tag">Spindles &amp; Machine Accessories</span>
+        <span class="tag">Gears &amp; Transmission</span>
+        <span class="tag">Linear Motion</span>
+        <span class="tag">Precision Components</span>
+        <span class="tag active">Automation &amp; Robotics</span>
+        <span class="tag">CNC Controls &amp; Digital</span>
+        <span class="tag">Measurement &amp; Monitoring</span>
+        <span class="tag">Hydraulics &amp; Pneumatics</span>
+        <span class="tag">Factory Equipment</span>
+        <span class="tag">Abrasives &amp; Finishing</span>
+      </div>
+
+      <button class="primary" style="width:100%;margin-top:16px" onclick="rerank()">Find Matches</button>
+      <div class="note">目前 56 家 Supplier Master 已有 Application Industries 與 Capabilities。媒合以 Capabilities 50%＋Solutions Needed 35%＋Application Industries 15% 計算。若供應商某一資料欄位為空白，該維度不會被當成不符合，而是依已有資料重新正規化計分。</div>
+    </aside>
+
+    <main class="card">
+      <div class="section-title">
+        <div><h2>Top Matches</h2><div class="meta" id="summary">Top 6 of 56 suppliers</div></div>
+        <span class="pill">Capability 50% · Solution 35% · Industry 15%</span>
+      </div>
+      <div class="matches" id="matches"></div>
+    </main>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 id="modalTitle" style="margin:0">Schedule Meeting</h3>
+      <button class="ghost" onclick="closeModal()">✕</button>
+    </div>
+    <p class="meta">Select a preferred meeting time at the Taiwan Flagship Showcase.</p>
+    <div class="timegrid">
+      <button class="time" onclick="confirmTime(this)">Sep 15 · 12:30</button>
+      <button class="time" onclick="confirmTime(this)">Sep 15 · 13:30</button>
+      <button class="time" onclick="confirmTime(this)">Sep 15 · 15:30</button>
+      <button class="time" onclick="confirmTime(this)">Sep 16 · 12:30</button>
+      <button class="time" onclick="confirmTime(this)">Sep 16 · 13:30</button>
+      <button class="time" onclick="confirmTime(this)">Sep 16 · 15:30</button>
+    </div>
+    <div id="confirmMsg" class="why"></div>
+  </div>
+</div>
+
+<script>
+// -----------------------------------------------------------------------------
+// Data source
+// -----------------------------------------------------------------------------
+// Leave blank for now. When the Google Apps Script endpoint is ready, paste it
+// here and return the same supplier field names used by the embedded data.
+const GOOGLE_SHEET_API_URL = "";
+
+const EMBEDDED_SUPPLIERS = [{"id":"S001","name":"ACCU-CUT INDUSTRIAL CO., LTD.","nameZh":"銘九股份有限公司","booth":"432428","building":"West Building, Level 3","flagship":false,"category":"Components","products":"End Mills, Thread Mills, Carbide Drills","industries":["Aerospace","Automotive & Mobility","Medical / Dental","Electronics / 3C","Mold & Die"],"capabilities":["Cutting Tools"],"website":"www.accu-cut.com.tw/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity"]},{"id":"S002","name":"AURORAL SINTER METALS CO., LTD.","nameZh":"旭宏金屬股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Components","products":"Powder Metallurgy Parts","industries":["Automotive & Mobility","Medical / Dental","Electronics / 3C"],"capabilities":["Precision Components"],"website":"http://www.auroral-sinter.com.tw","active":true,"solutions":["Improve Precision & Quality","Improve Motion & Positioning"]},{"id":"S003","name":"AXISCO PRECISION MACHINERY CO., LTD.","nameZh":"成祐精機股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Broaching Machines","industries":["Aerospace","Automotive & Mobility","Electronics / 3C"],"capabilities":["Broaching"],"website":"http://www.twaxisco.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts"]},{"id":"S004","name":"BAY UNION ABRASIVE TECHNOLOGY CO., LTD.","nameZh":"北聯研磨科技股份有限公司","booth":"237135","building":"North Building, Level 3","flagship":false,"category":"Components","products":"Grinding wheels, Abrasives","industries":["Aerospace","Semiconductor","Automotive & Mobility","Mold & Die"],"capabilities":["Abrasives & Finishing"],"website":"www.bayunion-tech.com/","active":true,"solutions":["Improve Surface Finish"]},{"id":"S005","name":"BIG STONE MACHINERY CO., LTD.","nameZh":"巨石機械廠有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"CNC Band Saws, CNC Drilling Machines","industries":["Aerospace","Automotive & Mobility","Energy & Power","Construction & Heavy Equipment","Marine & Shipbuilding"],"capabilities":["Drilling & Sawing"],"website":"http://www.bigstone.com.tw","active":true,"solutions":["Increase Productivity"]},{"id":"S006","name":"BRIGHT JING CHIN MACHINERY CO., LTD.","nameZh":"精勤精機股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Components","products":"Grippers, Couplings","industries":[],"capabilities":["Gears & Transmission","Automation & Robotics"],"website":"http://www.bmgroup.com.tw","active":true,"solutions":["Increase Productivity","Automate Production","Improve Motion & Positioning"]},{"id":"S007","name":"CHAIN HEADWAY CO., LTD.","nameZh":"正河源股份有限公司","booth":"431855","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Cutting Tools, Tool Holders, Inserts","industries":["Aerospace","Automotive & Mobility","Medical / Dental","Electronics / 3C","Mold & Die"],"capabilities":["Cutting Tools","Tooling & Workholding"],"website":"https://www.chainheadway.com/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Automate Production","Handle Complex Parts"]},{"id":"S008","name":"CHIA-LUNN INDUSTRIAL CO., LTD.","nameZh":"嘉綸實業股份有限公司","booth":"135772","building":"East Building, Level 3","flagship":false,"category":"Factory Solutions","products":"Hydraulic Tools, Hydraulic Cylinders","industries":["Construction & Heavy Equipment"],"capabilities":["Hydraulics & Pneumatics"],"website":"www.powerramhyd.com/","active":true,"solutions":["Improve Factory Safety & Material Handling"]},{"id":"S009","name":"CHIZONG MACHINE CO., LTD.","nameZh":"啟榮機械有限公司","booth":"135954","building":"East Building, Level 3","flagship":false,"category":"Factory Solutions","products":"Electric Winches, Electric Hoists, Lifting Equipment","industries":["Construction & Heavy Equipment"],"capabilities":["Factory Equipment"],"website":"www.duke-winch.com/","active":true,"solutions":["Increase Productivity","Improve Factory Safety & Material Handling"]},{"id":"S010","name":"CHUN YEH GEAR CO., LTD.","nameZh":"郡業工業有限公司","booth":"236191","building":"North Building, Level 3","flagship":false,"category":"Components","products":"Gearboxes","industries":["Automotive & Mobility","Medical / Dental"],"capabilities":["Gears & Transmission"],"website":"https://zh-tw.chunyeh.com.tw/","active":true,"solutions":["Automate Production","Improve Motion & Positioning"]},{"id":"S011","name":"CISFUN TECHNOLOGY CORP.","nameZh":"希次方科技有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Beam Punching Machines, Pipe Drilling Machines, Flange Punching Machines","industries":["Automotive & Mobility","Construction & Heavy Equipment","Oil & Gas / Petrochemical"],"capabilities":["Drilling & Sawing","Punching"],"website":"www.likest.com","active":true,"solutions":["Increase Productivity"]},{"id":"S012","name":"DERSTRONG ENTERPRISE CO., LTD.","nameZh":"旺毅企業有限公司","booth":"135982","building":"East Building, Level 3","flagship":false,"category":"Factory Solutions","products":"Machine Safety Windows, Machine Guards","industries":[],"capabilities":["Factory Equipment"],"website":"www.derstrong.com.tw/","active":true,"solutions":["Increase Productivity","Improve Factory Safety & Material Handling"]},{"id":"S013","name":"DFK INDUSTRIAL CORP.","nameZh":"東豐慶股份有限公司","booth":"236413","building":"North Building, Level 3","flagship":false,"category":"Components","products":"Piping Components, CNC Machined Components","industries":["Medical / Dental","Oil & Gas / Petrochemical"],"capabilities":["Precision Components"],"website":"dfk-cnc.com/","active":true,"solutions":["Improve Precision & Quality","Improve Motion & Positioning"]},{"id":"S014","name":"EANG LIAN CORPORATION","nameZh":"瑩聯股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Components","products":"Industrial Brushes","industries":[],"capabilities":["Abrasives & Finishing"],"website":"http://www.unionbrush.com","active":true,"solutions":["Improve Surface Finish"]},{"id":"S015","name":"EVERMORE MACHINE CO., LTD.","nameZh":"勤堃機械股份有限公司","booth":"431756","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Live Tool Holders, CNC Tool Holders, Pneumatic Grippers, Robot Arms","industries":["Robotics"],"capabilities":["Tooling & Workholding","Automation & Robotics","Hydraulics & Pneumatics"],"website":"www.evermore-tools.com/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Automate Production","Handle Complex Parts"]},{"id":"S016","name":"EXCELLENCE GEAR CO., LTD.","nameZh":"豪倫齒輪股份有限公司","booth":"236370","building":"North Building, Level 3","flagship":false,"category":"Components","products":"Bevel Gears, Hypoid Gears","industries":["Automotive & Mobility","Marine & Shipbuilding","Robotics"],"capabilities":["Gears & Transmission"],"website":"www.exce-gear.com.tw/","active":true,"solutions":["Automate Production","Improve Motion & Positioning"]},{"id":"S017","name":"FLAIR INDUSTRY ACCESSORY CO., LTD.","nameZh":"富雷爾股份有限公司","booth":"432093","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Hand Wheels, Machine Handles, Coolant Pumps, Filter Pumps","industries":[],"capabilities":["Spindles & Machine Accessories","Factory Equipment"],"website":"https://www.flair.com.tw/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts","Improve Motion & Positioning"]},{"id":"S018","name":"FLYING RAYS INTERNATIONAL TRADE CO., LTD.","nameZh":"飛捷國際貿易有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Components","products":"Machinery Parts, Hardware Parts, Custom Parts","industries":[],"capabilities":["Precision Components"],"website":"http://www.flying-rays.com","active":true,"solutions":["Improve Precision & Quality","Improve Motion & Positioning"]},{"id":"S019","name":"GSA TECHNOLOGY CO., LTD.","nameZh":"旭陽國際精機股份有限公司","booth":"431854","building":"West Building, Level 3","flagship":false,"category":"Components","products":"CNC Rotary Tables","industries":[],"capabilities":["Tooling & Workholding"],"website":"www.gsaplus.com.tw","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Automate Production","Handle Complex Parts"]},{"id":"S020","name":"HIWIN CORPORATION","nameZh":"上銀科技股份有限公司","booth":"236124","building":"North Building, Level 3","flagship":false,"category":"Machine Tools","products":"Lifting and Positioning Equipment, Robot Tooling/Grippers, Welding Machines and Equipment, Linear Motion Systems","industries":["Semiconductor","Medical / Dental","Electronics / 3C","Robotics"],"capabilities":["Linear Motion","Automation & Robotics","Factory Equipment"],"website":"https://hiwin.com/","active":true,"solutions":["Increase Productivity","Automate Production","Improve Motion & Positioning","Improve Factory Safety & Material Handling"]},{"id":"S021","name":"HON JAN CUTTING TOOLS CO., LTD.","nameZh":"弘展切削工具有限公司","booth":"431661","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Turning Tools, Milling Cutters, Thread Mills, High Feed Cutters","industries":["Mold & Die"],"capabilities":["Milling","Turning","Cutting Tools"],"website":"https://www.shangintool.com/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts"]},{"id":"S022","name":"HSIN HUAN LUNG MACHINE INDUSTRIAL CO., LTD","nameZh":"新環隆機械工業股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Components","products":"Bushing,worm and worm gear , Bronze valve","industries":[],"capabilities":["Gears & Transmission","Precision Components"],"website":"http://www.derfang.com.tw","active":true,"solutions":["Improve Precision & Quality","Automate Production","Improve Motion & Positioning"]},{"id":"S023","name":"HSINFUCHIA INDUSTRIAL CO., LTD.","nameZh":"信服嘉工業股份有限公司","booth":"134062","building":"East Building, Level 3","flagship":false,"category":"Components","products":"Flanges, Wheel Hubs, Gear Components","industries":["Automotive & Mobility"],"capabilities":["Gears & Transmission","Precision Components"],"website":"www.hfcind.com","active":true,"solutions":["Improve Precision & Quality","Automate Production","Improve Motion & Positioning"]},{"id":"S024","name":"HUI BAO ENTERPRISE CO., LTD.","nameZh":"輝寶實業有限公司","booth":"236282","building":"North Building, Level 3","flagship":false,"category":"Factory Solutions","products":"Pneumatic Tools, Pneumatic Equipment","industries":[],"capabilities":["Hydraulics & Pneumatics"],"website":"www.thb.com.tw/","active":true,"solutions":[]},{"id":"S025","name":"HYPERMAX MACHINERY CO., LTD.","nameZh":"向應機械工業股份有限公司","booth":"432431","building":"West Building, Level 3","flagship":false,"category":"Machine Tools","products":"CNC Internal Grinders","industries":["Automotive & Mobility"],"capabilities":["Grinding"],"website":"https://www.lumaxjim.com.tw/index_en.php","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Improve Surface Finish"]},{"id":"S026","name":"IDI PRECISION MACHINERY LTD.","nameZh":"翔特精密機械有限公司","booth":"431969","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Mold Machining, Graphite Milling, Copper Electrode Milling, Dental Parts","industries":["Medical / Dental","Mold & Die"],"capabilities":["Milling"],"website":"www.iditools.com/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts"]},{"id":"S027","name":"INNGRIT INC.","nameZh":"英貴爾科技股份有限公司","booth":"431381","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Zero Point Clamping Systems, Clamping Plates","industries":["Aerospace","Automotive & Mobility","Medical / Dental","Robotics"],"capabilities":["Tooling & Workholding"],"website":"www.inngrit.com.tw/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Automate Production","Handle Complex Parts"]},{"id":"S028","name":"JAINNHER MACHINE CO., LTD.","nameZh":"鍵和機械股份有限公司","booth":"237363","building":"North Building, Level 3","flagship":false,"category":"Machine Tools","products":"CNC Grinding Machines","industries":["Aerospace","Semiconductor","Automotive & Mobility","Medical / Dental","Electronics / 3C","Mold & Die","Energy & Power"],"capabilities":["Grinding"],"website":"www.jainnher.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Improve Surface Finish"]},{"id":"S029","name":"JETON R/D & MFG. INC.","nameZh":"宏玥工業股份有限公司","booth":"431738","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Coolant Hoses, Spray Nozzles, Vacuum Tubes","industries":[],"capabilities":["Factory Equipment"],"website":"www.jeton.com.tw/","active":true,"solutions":["Increase Productivity"]},{"id":"S030","name":"JIMMORE INTERNATIONAL CORP.","nameZh":"竣貿國際股份有限公司","booth":"431308","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Cutting Tools","industries":["Mold & Die"],"capabilities":["Cutting Tools"],"website":"nine9.jic-tools.com.tw/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity"]},{"id":"S031","name":"JIN KOU ENTERPRISE CO., LTD.","nameZh":"金扣企業有限公司","booth":"432428","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Quick Release Pins, Pull Pins, Special Fasteners","industries":["Aerospace","Marine & Shipbuilding"],"capabilities":["Precision Components"],"website":"www.jinkouinc.com","active":true,"solutions":["Improve Precision & Quality","Improve Motion & Positioning"]},{"id":"S032","name":"JIUH-YEH PRECISION MACHINERY CO., LTD.","nameZh":"鉅業精機股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Milling Machines, Horizontal Machining Centers, 5-Axis Machining Centers","industries":["Aerospace","Automotive & Mobility","Medical / Dental","Electronics / 3C","Mold & Die"],"capabilities":["5-Axis Machining","Milling"],"website":"http://www.jiuhyeh.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts"]},{"id":"S033","name":"KAI HE MACHINERY CO., LTD.","nameZh":"凱賀精密機械有限公司","booth":"236368","building":"North Building, Level 3","flagship":false,"category":"Components","products":"Gear Racks, Pinions","industries":["Robotics"],"capabilities":["Gears & Transmission"],"website":"www.kh-rack.com/","active":true,"solutions":["Automate Production","Improve Motion & Positioning"]},{"id":"S034","name":"KAO MING MACHINERY INDUSTRIAL CO., LTD.","nameZh":"高明精機工業股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Gantry Machining Centers, 5-Axis Machining Centers","industries":["Aerospace","Automotive & Mobility","Mold & Die"],"capabilities":["5-Axis Machining","Milling"],"website":"http://www.kaoming.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts"]},{"id":"S035","name":"MATRIX MACHINE TOOL (COVENTRY) LTD.","nameZh":"邁萃斯精密股份有限公司","booth":"236752","building":"North Building, Level 3","flagship":false,"category":"Machine Tools","products":"gear cutting tools, CNC gear grinding machines","industries":["Automotive & Mobility","Aerospace"],"capabilities":["Grinding","Cutting Tools"],"website":"https://www.matrix-machine.tw/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Improve Surface Finish"]},{"id":"S036","name":"OSCAR E.D.M. COMPANY LTD.","nameZh":"先捷實業股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Sinker EDMs, Drill EDMs, Flexible Manufacturing Systems","industries":["Aerospace","Automotive & Mobility","Medical / Dental","Electronics / 3C","Mold & Die","Energy & Power","Oil & Gas / Petrochemical"],"capabilities":["EDM","Automation & Robotics"],"website":"http://www.oscaredm.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Automate Production","Handle Complex Parts"]},{"id":"S037","name":"PALMARY MACHINERY CO., LTD.","nameZh":"大光長榮機械股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Grinding Machines","industries":["Aerospace","Automotive & Mobility","Medical / Dental","Electronics / 3C","Mold & Die","Energy & Power"],"capabilities":["Grinding"],"website":"http://www.palmary.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Improve Surface Finish"]},{"id":"S038","name":"PAO FONG INDUSTRY CO., LTD.","nameZh":"堡豐工業股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Milling Machines","industries":["Mold & Die"],"capabilities":["Milling"],"website":"http://www.paofong.com.tw","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts"]},{"id":"S039","name":"PARFAITE TOOL CO., LTD.","nameZh":"普慧企業股份有限公司","booth":"431771","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Built-in Motor Spindles, CNC Tool Holders, Spindle Speeders, Special Tool Holders","industries":["Aerospace","Automotive & Mobility","Electronics / 3C","Mold & Die"],"capabilities":["Tooling & Workholding","Spindles & Machine Accessories"],"website":"parfaite.com/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Automate Production","Handle Complex Parts","Improve Motion & Positioning"]},{"id":"S040","name":"RAYDER MACHINERY CORPORATION","nameZh":"銳德精密股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Angle Heads, Multi-Spindle Heads, Speed Increasers","industries":["Aerospace","Automotive & Mobility","Mold & Die"],"capabilities":["Spindles & Machine Accessories"],"website":"https://www.focaseiki.com.tw/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts","Improve Motion & Positioning"]},{"id":"S041","name":"SETCO","nameZh":"賽科有限公司","booth":"432423","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Precision Spindles, Milling Heads, Slides, and Spindle/slide Combinations","industries":["Aerospace","Automotive & Mobility","Robotics"],"capabilities":["Milling","Spindles & Machine Accessories"],"website":"https://www.setco.com/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts","Improve Motion & Positioning"]},{"id":"S042","name":"SHEN FENG TOOLS CO., LTD.","nameZh":"伸豐工具股份有限公司","booth":"135070","building":"East Building, Level 3","flagship":false,"category":"Components","products":"Hydraulic Tools","industries":["Construction & Heavy Equipment"],"capabilities":["Hydraulics & Pneumatics"],"website":"www.omarstar.com/","active":true,"solutions":["Improve Factory Safety & Material Handling"]},{"id":"S043","name":"SIX STAR MACHINERY INDUSTRY CO., LTD.","nameZh":"六星機械工業股份有限公司","booth":"236335","building":"North Building, Level 3","flagship":false,"category":"Components","products":"Gears, Gearboxes, Worm Gears, Bevel Gears","industries":["Aerospace","Automotive & Mobility","Energy & Power","Robotics","Construction & Heavy Equipment"],"capabilities":["Gears & Transmission"],"website":"www.sixstar.com.tw","active":true,"solutions":["Automate Production","Improve Motion & Positioning"]},{"id":"S044","name":"SUN FIRM MACHINERY IND. CO., LTD.","nameZh":"三鋒機器工業股份有限公司","booth":"338688","building":"South Building, Level 3","flagship":false,"category":"Machine Tools","products":"CNC Lathes","industries":["Aerospace","Automotive & Mobility","Energy & Power","Marine & Shipbuilding"],"capabilities":["Turning"],"website":"www.sunfirm.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts"]},{"id":"S045","name":"SUNUS TECH CO., LTD.","nameZh":"晶傑精機有限公司","booth":"432436","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Gearboxes","industries":["Robotics"],"capabilities":["Gears & Transmission"],"website":"https://www.sunusdrive.com/index/en/index.htm","active":true,"solutions":["Automate Production","Improve Motion & Positioning"]},{"id":"S046","name":"SUPER AIR COMPRESSOR TECHNOLOGY CO., LTD.","nameZh":"能揚興業有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Factory Solutions","products":"Zero Air Loss Condensate Drains, Motorized Ball Valves","industries":["Semiconductor","Automotive & Mobility","Energy & Power","Marine & Shipbuilding"],"capabilities":["Factory Equipment"],"website":"https://www.superairtw.com/","active":true,"solutions":["Increase Productivity"]},{"id":"S047","name":"SYNTEC TECHNOLOGY CO., LTD.","nameZh":"新代科技股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Automation","products":"CNC Controllers, Robotic Arms, Vision Systems","industries":["Electronics / 3C","Robotics"],"capabilities":["Automation & Robotics","CNC Controls & Digital"],"website":"http://www.syntecclub.com.tw","active":true,"solutions":["Increase Productivity","Automate Production"]},{"id":"S048","name":"TAIKI INDUSTRIAL CO., LTD.","nameZh":"代機工業有限公司","booth":"431987","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Soft Jaws, Hard Jaws, Chuck Accessories","industries":["Aerospace","Semiconductor","Automotive & Mobility","Electronics / 3C"],"capabilities":["Tooling & Workholding"],"website":"www.taiki-jaws.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Automate Production","Handle Complex Parts"]},{"id":"S049","name":"TBI MOTION TECHNOLOGY CO., LTD.","nameZh":"全球傳動科技股份有限公司","booth":"236130","building":"North Building, Level 3","flagship":false,"category":"Components","products":"Ball Screws, Linear Guides, Ball Splines, Linear Actuators","industries":["Semiconductor","Medical / Dental","Energy & Power","Robotics"],"capabilities":["Linear Motion"],"website":"www.tbimotion.com.tw/en/","active":true,"solutions":["Automate Production","Improve Motion & Positioning"]},{"id":"S050","name":"TENPRO ADVANCED TECHNOLOGIES CO., LTD.","nameZh":"騰柏科技股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Automation","products":"Tool Management Systems, Smart Tool Cabinets","industries":[],"capabilities":["CNC Controls & Digital"],"website":"https://www.tenprotech.com/","active":true,"solutions":["Increase Productivity","Automate Production","Optimize Tool Management"]},{"id":"S051","name":"THETA PRECISION CO., LTD.","nameZh":"釸達精密股份有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Components","products":"Built-in Spindles, Motor Spindles","industries":[],"capabilities":["Spindles & Machine Accessories"],"website":"http://www.theta-spindle.com/ch_company.asp","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts","Improve Motion & Positioning"]},{"id":"S052","name":"TOA DR ENTERPRISE CO., LTD.","nameZh":"道德煜企業有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Machine Tools","products":"Slitting Machines, Slitter Knives, Slitting Tools","industries":["Automotive & Mobility","Electronics / 3C","Energy & Power"],"capabilities":["Slitting","Cutting Tools"],"website":"https://www.slitterline.com","active":true,"solutions":["Improve Precision & Quality","Increase Productivity"]},{"id":"S053","name":"TSENSE TECHNOLOGY CO., LTD.","nameZh":"得盛世企業有限公司","booth":"236834","building":"North Building, Level 3","flagship":true,"category":"Components","products":"Tool Setters","industries":["Medical / Dental","Mold & Die"],"capabilities":["Measurement & Monitoring"],"website":"https://tsense-tw.com/","active":true,"solutions":["Improve Precision & Quality","Automate Production"]},{"id":"S054","name":"VERNAL ENGINEERING CO., LTD.","nameZh":"義高工業股份有限公司","booth":"431660; 236834","building":"West Building, Level 3; North Building, Level 3","flagship":true,"category":"Components","products":"Machine Tool Parts, Tool Holders, OEM Components","industries":["Marine & Shipbuilding"],"capabilities":["Tooling & Workholding","Precision Components"],"website":"http://www/.vernal.tw","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Automate Production","Handle Complex Parts","Improve Motion & Positioning"]},{"id":"S055","name":"YOU JI MACHINE INDUSTRIAL  CO LTD.","nameZh":"油機工業股份有限公司","booth":"339476","building":"South Building, Level 3","flagship":false,"category":"Machine Tools","products":"CNC Vertical Lathes, Vertical Turning Centers","industries":["Aerospace","Automotive & Mobility","Energy & Power","Marine & Shipbuilding","Mold & Die","Oil & Gas / Petrochemical","Construction & Heavy Equipment"],"capabilities":["Turning"],"website":"www.youji.com/","active":true,"solutions":["Improve Precision & Quality","Increase Productivity","Handle Complex Parts"]},{"id":"S056","name":"ZONG YIH RUBBER INDUSTRIAL COMPANY","nameZh":"榮憶橡膠工業股份有限公司","booth":"431766","building":"West Building, Level 3","flagship":false,"category":"Components","products":"Rubber Components, Molded Rubber Parts","industries":["Semiconductor","Automotive & Mobility","Marine & Shipbuilding","Construction & Heavy Equipment"],"capabilities":["Precision Components"],"website":"https://www.zonrubber.com/","active":true,"solutions":["Improve Precision & Quality","Improve Motion & Positioning"]}];
+let suppliers = EMBEDDED_SUPPLIERS.filter(s => s.active !== false);
+
+function selectedFrom(groupId){
+  return [...document.querySelectorAll(`#${groupId} .tag.active`)].map(x=>x.textContent.trim());
+}
+
+function overlap(selected, available){
+  if(!selected.length) return {ratio:0, matched:[]};
+  const set = new Set(available || []);
+  const matched = selected.filter(x=>set.has(x));
+  return {ratio:matched.length/selected.length, matched};
+}
+
+function scoreSupplier(s, selectedNeeds, selectedSolutions, selectedIndustries){
+  const cap = overlap(selectedNeeds, s.capabilities);
+  const sol = overlap(selectedSolutions, s.solutions);
+  const ind = overlap(selectedIndustries, s.industries);
+
+  let numerator = 0;
+  let denominator = 0;
+
+  if(selectedNeeds.length){
+    numerator += cap.ratio * 50;
+    denominator += 50;
+  }
+  if(selectedSolutions.length && s.solutions && s.solutions.length){
+    numerator += sol.ratio * 35;
+    denominator += 35;
+  }
+  if(selectedIndustries.length && s.industries && s.industries.length){
+    numerator += ind.ratio * 15;
+    denominator += 15;
+  }
+
+  const score = denominator ? Math.round((numerator / denominator) * 100) : 0;
+  return {
+    ...s, score,
+    matchedCapabilities:cap.matched,
+    matchedSolutions:sol.matched,
+    matchedIndustries:ind.matched
+  };
+}
+
+function buildWhy(s){
+  const matched = [...s.matchedCapabilities, ...s.matchedSolutions, ...s.matchedIndustries];
+  const matchLine = matched.length
+    ? `<div class="match-tags">${matched.map(t=>`<span class="match-tag">${escapeHtml(t)}</span>`).join("")}</div>`
+    : "";
+  const industryNote = (!s.industries || !s.industries.length)
+    ? `<div class="small-note">Industry application data not specified; score is based on available capability data.</div>`
+    : "";
+  return `${matchLine}<div class="why"><b>Products:</b> ${escapeHtml(s.products || "—")}</div>${industryNote}`;
+}
+
+function safeWebsiteUrl(value){
+  const raw = String(value || "").trim();
+  if(!raw) return "";
+  if(/^https?:\/\//i.test(raw)) return escapeHtml(raw);
+  return escapeHtml("https://" + raw.replace(/^\/+/, ""));
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function rerank(){
+  const selectedNeeds = selectedFrom("needs");
+  const selectedIndustries = selectedFrom("industries");
+  const selectedSolutions = selectedFrom("solutions");
+
+  if(!selectedNeeds.length && !selectedIndustries.length && !selectedSolutions.length){
+    document.getElementById("matches").innerHTML =
+      `<div class="empty">Please select at least one Application Industry, Solution, or Looking for item to generate matches.</div>`;
+    document.getElementById("summary").textContent = `56 suppliers available`;
+    return;
+  }
+
+
+  const ranked = suppliers
+    .map(s=>scoreSupplier(s, selectedNeeds, selectedSolutions, selectedIndustries))
+    .sort((a,b)=> b.score-a.score
+      || b.matchedCapabilities.length-a.matchedCapabilities.length
+      || b.matchedSolutions.length-a.matchedSolutions.length
+      || b.matchedIndustries.length-a.matchedIndustries.length
+      || Number(b.flagship)-Number(a.flagship)
+      || a.name.localeCompare(b.name));
+
+  const positive = ranked.filter(s=>s.score>0);
+  const top = (positive.length ? positive : ranked).slice(0,6);
+  render(top, ranked.length);
+}
+
+function render(arr, total=suppliers.length){
+  const box=document.getElementById("matches");
+  box.innerHTML="";
+
+  arr.forEach(s=>{
+    const d=document.createElement("div");
+    d.className="match";
+    const flag = s.flagship ? `<span class="flagship">Flagship Showcase</span>` : "";
+    const location = [s.category, s.booth ? `Booth ${escapeHtml(s.booth)}` : "", s.building].filter(Boolean).join(" · ");
+
+    d.innerHTML=`
+      <div class="score" style="--score:${s.score}"><span>${s.score}%</span></div>
+      <div>
+        <h3>${escapeHtml(s.name)}${flag}</h3>
+        <div class="meta">${escapeHtml(location)}</div>
+        ${buildWhy(s)}
+      </div>
+      <div class="actions">
+        ${s.website ? `<a class="website" href="${safeWebsiteUrl(s.website)}" target="_blank" rel="noopener noreferrer">Website ↗</a>` : ""}
+        <button class="good" onclick='openModal(${JSON.stringify(s.name)})'>Interested</button>
+        <button class="ghost" onclick="this.textContent='Saved ✓'">Save</button>
+        <button class="danger" onclick="this.closest('.match').style.display='none'">Not Relevant</button>
+      </div>`;
+    box.appendChild(d);
+  });
+
+  document.getElementById("summary").textContent=`Top ${arr.length} of ${total} suppliers`;
+}
+
+async function loadSuppliers(){
+  if(!GOOGLE_SHEET_API_URL){
+    suppliers = EMBEDDED_SUPPLIERS.filter(s=>s.active!==false);
+    document.getElementById("supplierCount").textContent=suppliers.length;
+    rerank();
+    return;
+  }
+
+  try{
+    const response = await fetch(GOOGLE_SHEET_API_URL, {cache:"no-store"});
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const incoming = Array.isArray(data) ? data : data.suppliers;
+    if(!Array.isArray(incoming)) throw new Error("Invalid supplier payload");
+    suppliers = incoming.filter(s=>s.active!==false);
+  }catch(err){
+    console.warn("Google Sheet load failed; using embedded supplier data.", err);
+    suppliers = EMBEDDED_SUPPLIERS.filter(s=>s.active!==false);
+  }
+
+  document.getElementById("supplierCount").textContent=suppliers.length;
+  rerank();
+}
+
+document.querySelectorAll(".tag").forEach(t=>t.onclick=()=>t.classList.toggle("active"));
+
+function openModal(name){
+  document.getElementById("modalTitle").textContent=`Schedule · ${name}`;
+  document.getElementById("confirmMsg").textContent="";
+  document.getElementById("modal").style.display="flex";
+}
+function closeModal(){document.getElementById("modal").style.display="none"}
+function confirmTime(btn){
+  document.getElementById("confirmMsg").textContent=`✓ Meeting request saved for ${btn.textContent}.`;
+}
+
+loadSuppliers();
+</script>
+</body>
+</html>
