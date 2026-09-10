@@ -103,8 +103,8 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
       <label>Application Industries</label>
       <div class="small-note" style="margin:0 0 7px">Where should the solution be applied?</div>
       <div class="tags" id="industries">
-        <span class="tag active">Aerospace</span>
-        <span class="tag active">Semiconductor</span>
+        <span class="tag">Aerospace</span>
+        <span class="tag">Semiconductor</span>
         <span class="tag">Automotive &amp; Mobility</span>
         <span class="tag">Medical / Dental</span>
         <span class="tag">Electronics / 3C</span>
@@ -133,10 +133,10 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
       <label>Looking for</label>
       <div class="small-note" style="margin:0 0 7px">What technologies or capabilities do you need?</div>
       <div class="tags" id="needs">
-        <span class="tag active">5-Axis Machining</span>
+        <span class="tag">5-Axis Machining</span>
         <span class="tag">Milling</span>
         <span class="tag">Turning</span>
-        <span class="tag active">Grinding</span>
+        <span class="tag">Grinding</span>
         <span class="tag">EDM</span>
         <span class="tag">Drilling &amp; Sawing</span>
         <span class="tag">Broaching</span>
@@ -148,7 +148,7 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
         <span class="tag">Gears &amp; Transmission</span>
         <span class="tag">Linear Motion</span>
         <span class="tag">Precision Components</span>
-        <span class="tag active">Automation &amp; Robotics</span>
+        <span class="tag">Automation &amp; Robotics</span>
         <span class="tag">CNC Controls &amp; Digital</span>
         <span class="tag">Measurement &amp; Monitoring</span>
         <span class="tag">Hydraulics &amp; Pneumatics</span>
@@ -341,6 +341,13 @@ function escapeHtml(value){
     .replaceAll("'","&#039;");
 }
 
+function showInitialState(){
+  currentResults = new Map();
+  document.getElementById("matches").innerHTML =
+    `<div class="empty">Select your needs on the left, then click <b>Find Matches</b> to see recommended Taiwan suppliers.</div>`;
+  document.getElementById("summary").textContent = `${suppliers.length} suppliers available`;
+}
+
 function rerank(){
   const selectedNeeds = selectedFrom("needs");
   const selectedIndustries = selectedFrom("industries");
@@ -403,7 +410,7 @@ async function loadSuppliers(){
   if(!GOOGLE_SHEET_API_URL){
     suppliers = EMBEDDED_SUPPLIERS.filter(s=>s.active!==false);
     document.getElementById("supplierCount").textContent=suppliers.length;
-    rerank();
+    showInitialState();
     return;
   }
 
@@ -420,7 +427,7 @@ async function loadSuppliers(){
   }
 
   document.getElementById("supplierCount").textContent=suppliers.length;
-  rerank();
+  showInitialState();
 }
 
 document.querySelectorAll(".tag").forEach(t=>t.onclick=()=>t.classList.toggle("active"));
