@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Taiwan Supplier Matchmaking at IMTS 2026</title>
+<title>TAITRA Smart Match — IMTS 2026</title>
 <style>
 :root{
   --bg:#d9f0f7; --panel:rgba(255,255,255,.88); --panel2:rgba(236,248,252,.92); --text:#194c97; --muted:#5e7fa8;
@@ -49,7 +48,7 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
 .modal{display:none;position:fixed;inset:0;background:rgba(26,76,120,.30);z-index:10;align-items:center;justify-content:center;padding:18px}
 .modal .box{max-width:520px;width:100%;background:#f7fcfd;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(37,91,133,.18)}
 .dategrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 4px}.timegrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 14px}
-.time{background:#e7f4f8;color:var(--text);border:1px solid var(--line)}.time.selected{background:var(--accent);color:white;border-color:var(--accent)}
+.time{background:#e7f4f8;color:var(--text);border:1px solid var(--line)}.time.selected{background:var(--accent);color:white;border-color:var(--accent)}.time:disabled{cursor:not-allowed;opacity:.48;background:#edf1f3;color:#8796a4;border-color:#d5dde3}.time.booked:disabled{opacity:.62;text-decoration:line-through}
 @media(max-width:820px){
   .grid{grid-template-columns:1fr}
   aside.card{position:static;max-height:none;overflow:visible}
@@ -62,15 +61,15 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
 <body>
 <header>
   <div class="brand">
-    <div><h1>Taiwan Supplier Matchmaking</h1><small>IMTS 2026 | Taiwan Flagship Showcase</small></div>
+    <div><h1>TAITRA Smart Match</h1><small>IMTS 2026 · Taiwan Flagship Showcase</small></div>
     <div class="pill"><span id="supplierCount">56</span> Taiwan suppliers</div>
   </div>
 </header>
 
 <div class="wrap">
   <div class="hero">
-    <h2><strong>Find the Right Taiwan Supplier</strong></h2>
-    <p>Tell us what you need and discover Taiwan suppliers that match your industry, solution needs, and technical requirements.</p>
+    <h2><strong>Find Your Taiwan Manufacturing Match</strong></h2>
+    <p>Quickly match your needs with the right Taiwan suppliers in machine tools, smart manufacturing, and precision components.</p>
   </div>
 
   <div class="grid">
@@ -157,7 +156,7 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
       </div>
 
       <button class="primary" style="width:100%;margin-top:16px" onclick="rerank()">Find Matches</button>
-      <div class="note">The current Supplier Master includes Application Industries and Capabilities for 56 suppliers. Matching scores are calculated based on Capabilities (50%), Solutions Needed (35%), and Application Industries (15%). If a supplier has no data for a particular dimension, that dimension is not treated as a mismatch; instead, the score is re-normalized based on the available data.</div>
+      <div class="note">目前 56 家 Supplier Master 已有 Application Industries 與 Capabilities。媒合以 Capabilities 50%＋Solutions Needed 35%＋Application Industries 15% 計算。若供應商某一資料欄位為空白，該維度不會被當成不符合，而是依已有資料重新正規化計分。</div>
     </aside>
 
     <main class="card">
@@ -441,30 +440,62 @@ document.querySelectorAll(".tag").forEach(t=>t.onclick=()=>t.classList.toggle("a
 
 let activeMeetingSupplierId = "";
 let selectedMeetingDate = "";
+let bookedMeetingSlots = new Set();
+let bookingInProgress = false;
 
-function openModal(id){
+async function loadBookedSlots(supplierId){
+  bookedMeetingSlots = new Set();
+  if(!GOOGLE_SHEET_API_URL) return;
+
+  const url = new URL(GOOGLE_SHEET_API_URL);
+  url.searchParams.set("action", "bookedSlots");
+  url.searchParams.set("supplierId", supplierId);
+  url.searchParams.set("_", Date.now());
+
+  try{
+    const response = await fetch(url.toString(), {cache:"no-store"});
+    const data = await response.json();
+    if(data && data.success && Array.isArray(data.bookedSlots)){
+      bookedMeetingSlots = new Set(data.bookedSlots);
+    }
+  }catch(err){
+    console.warn("Could not load booked meeting slots", err);
+  }
+}
+
+async function openModal(id){
   const supplier = currentResults.get(id);
   if(!supplier) return;
 
   activeMeetingSupplierId = id;
   selectedMeetingDate = "";
+  bookingInProgress = false;
 
   document.getElementById("modalTitle").textContent=`Schedule · ${supplier.name}`;
   document.getElementById("confirmMsg").textContent="";
   document.getElementById("timeGrid").innerHTML="";
-  document.getElementById("timePrompt").textContent="Select a date first.";
+  document.getElementById("timePrompt").textContent="Checking availability…";
 
   document.querySelectorAll(".date-option").forEach(btn=>{
     btn.classList.remove("selected");
+    btn.disabled = true;
   });
 
   document.getElementById("modal").style.display="flex";
+  await loadBookedSlots(id);
+
+  document.querySelectorAll(".date-option").forEach(btn=>{
+    btn.disabled = false;
+  });
+  document.getElementById("timePrompt").textContent="Select a date first.";
 }
 
 function closeModal(){
   document.getElementById("modal").style.display="none";
   activeMeetingSupplierId = "";
   selectedMeetingDate = "";
+  bookedMeetingSlots = new Set();
+  bookingInProgress = false;
 }
 
 function selectMeetingDate(dateLabel, btn){
@@ -489,31 +520,80 @@ function selectMeetingDate(dateLabel, btn){
   }
 
   slots.forEach(label=>{
+    const fullMeetingTime = `${dateLabel} · ${label}`;
+    const isBooked = bookedMeetingSlots.has(fullMeetingTime);
     const b = document.createElement("button");
-    b.className = "time";
-    b.textContent = label;
-    b.onclick = () => confirmTime(label, b);
+    b.className = `time${isBooked ? " booked" : ""}`;
+    b.textContent = isBooked ? `${label} · Booked` : label;
+    b.disabled = isBooked;
+    if(!isBooked){
+      b.onclick = () => confirmTime(label, b);
+    }
     timeGrid.appendChild(b);
   });
 }
 
-function confirmTime(timeLabel, btn){
-  if(!selectedMeetingDate) return;
+async function checkBookingStatus(supplierId, meetingTime){
+  const url = new URL(GOOGLE_SHEET_API_URL);
+  url.searchParams.set("action", "bookingStatus");
+  url.searchParams.set("supplierId", supplierId);
+  url.searchParams.set("meetingTime", meetingTime);
+  url.searchParams.set("sessionId", SESSION_ID);
+  url.searchParams.set("_", Date.now());
 
-  document.querySelectorAll("#timeGrid .time").forEach(b=>{
-    b.classList.remove("selected");
-  });
-  btn.classList.add("selected");
+  try{
+    const response = await fetch(url.toString(), {cache:"no-store"});
+    return await response.json();
+  }catch(err){
+    console.warn("Could not confirm booking status", err);
+    return null;
+  }
+}
+
+async function confirmTime(timeLabel, btn){
+  if(!selectedMeetingDate || bookingInProgress) return;
 
   const supplier = currentResults.get(activeMeetingSupplierId);
-  const fullMeetingTime = `${selectedMeetingDate} · ${timeLabel}`;
+  if(!supplier) return;
 
-  if(supplier){
-    sendMatchRecord(supplier, "Meeting Requested", fullMeetingTime);
+  const fullMeetingTime = `${selectedMeetingDate} · ${timeLabel}`;
+  if(bookedMeetingSlots.has(fullMeetingTime)){
+    btn.disabled = true;
+    btn.classList.add("booked");
+    btn.textContent = `${timeLabel} · Booked`;
+    return;
   }
 
-  document.getElementById("confirmMsg").textContent =
-    `✓ Meeting request saved for ${fullMeetingTime}.`;
+  bookingInProgress = true;
+  document.querySelectorAll("#timeGrid .time").forEach(b=>b.disabled=true);
+  document.getElementById("confirmMsg").textContent = `Saving ${fullMeetingTime}…`;
+
+  sendMatchRecord(supplier, "Meeting Requested", fullMeetingTime);
+
+  let status = null;
+  for(let attempt=0; attempt<4; attempt++){
+    await new Promise(resolve=>setTimeout(resolve, 650 + attempt*250));
+    status = await checkBookingStatus(supplier.id, fullMeetingTime);
+    if(status && status.success && status.booked) break;
+  }
+
+  await loadBookedSlots(supplier.id);
+  bookingInProgress = false;
+
+  if(status && status.success && status.bookedByThisSession){
+    document.getElementById("confirmMsg").textContent =
+      `✓ Meeting request saved for ${fullMeetingTime}.`;
+  }else if(status && status.success && status.booked){
+    document.getElementById("confirmMsg").textContent =
+      `Sorry, ${fullMeetingTime} was just booked by another buyer. Please choose another time.`;
+  }else{
+    document.getElementById("confirmMsg").textContent =
+      `Could not confirm the booking. Please try again.`;
+  }
+
+  const selectedDateButton = [...document.querySelectorAll(".date-option")]
+    .find(b=>b.textContent.trim()===selectedMeetingDate);
+  if(selectedDateButton) selectMeetingDate(selectedMeetingDate, selectedDateButton);
 }
 
 loadSuppliers();
