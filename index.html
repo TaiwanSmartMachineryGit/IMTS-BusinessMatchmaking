@@ -56,6 +56,29 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
   .actions{grid-column:1/-1;flex-direction:row;justify-content:flex-end;min-width:0}.actions button,.actions a{width:auto}
   .score{width:64px;height:64px}
 }
+
+.shortlist-card{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 10px 24px rgba(32,67,86,.05)}
+.shortlist-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.shortlist-count{min-width:28px;height:28px;border-radius:8px;background:#e8f4ee;color:#2f6b57;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.shortlist-help{color:var(--muted);font-size:14px;margin:6px 0 12px}
+.shortlist-item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.shortlist-item:first-of-type{border-top:none}
+.shortlist-name{font-weight:800;color:var(--text)}
+.shortlist-meta{font-size:13px;color:var(--muted);margin-top:4px}
+.shortlist-status{display:inline-block;margin-top:7px;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#eef5f8;color:#315d72}
+.shortlist-status.interested{background:#e6f4ed;color:#27634d}
+.shortlist-remove{border:0;background:transparent;color:#71808c;font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.shortlist-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.shortlist-actions button{flex:1;min-width:170px}
+.shortlist-empty{padding:16px 0;color:var(--muted);font-size:14px}
+@media print{
+  body *{visibility:hidden!important}
+  #shortlistPrintArea,#shortlistPrintArea *{visibility:visible!important}
+  #shortlistPrintArea{position:absolute;left:0;top:0;width:100%;padding:24px;background:#fff}
+  .shortlist-remove,.shortlist-actions,.shortlist-help{display:none!important}
+  .shortlist-card{box-shadow:none;border:none;margin:0;padding:0}
+}
+
 </style>
 </head>
 <body>
@@ -166,7 +189,25 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
         <span class="pill">Capability 50% · Solution 35% · Industry 15%</span>
       </div>
       <div class="matches" id="matches"></div>
-    </main>
+    
+<div class="shortlist-card" id="shortlistPrintArea">
+  <div class="shortlist-head">
+    <div>
+      <div class="eyebrow">03 / KEEP IN TOUCH</div>
+      <h2 style="margin:4px 0 0">Your Shortlist</h2>
+    </div>
+    <div class="shortlist-count" id="shortlistCount">0</div>
+  </div>
+  <div class="shortlist-help">Keep the suppliers you want to visit. Adding a supplier does not book a meeting.</div>
+  <div id="shortlistList" class="shortlist-empty">No suppliers saved yet.</div>
+  <div class="shortlist-actions">
+    <button class="secondary" type="button" onclick="clearShortlist()">Clear list</button>
+    <button class="secondary" type="button" onclick="downloadShortlistImage()">Download Image ↓</button>
+    <button class="primary" type="button" onclick="printShortlist()">Print / Save as PDF ↗</button>
+  </div>
+</div>
+
+</main>
   </div>
 </div>
 
@@ -263,6 +304,7 @@ function handleInterested(id){
   const supplier = currentResults.get(id);
   if(!supplier) return;
   sendMatchRecord(supplier, "Interested");
+  addToShortlist(supplier, "Interested");
   openModal(id);
 }
 
@@ -270,6 +312,7 @@ function handleSave(id, btn){
   const supplier = currentResults.get(id);
   if(!supplier) return;
   sendMatchRecord(supplier, "Saved");
+  addToShortlist(supplier, "Saved");
   btn.textContent = "Saved ✓";
 }
 
@@ -465,6 +508,300 @@ let selectedMeetingDate = "";
 let bookedMeetingSlots = new Set();
 let bookingInProgress = false;
 
+const SHORTLIST_KEY = "imts2026_shortlist_v1";
+let shortlist = loadShortlist();
+
+
+
+function loadShortlist(){
+  try{
+    const raw = localStorage.getItem(SHORTLIST_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function persistShortlist(){
+  try{
+    localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist));
+  }catch(e){
+    console.warn("Could not save shortlist", e);
+  }
+  renderShortlist();
+}
+
+function addToShortlist(supplier, status){
+  const existing = shortlist.find(item => item.id === supplier.id);
+  const normalizedStatus = status === "Interested" ? "Interested" : "Saved";
+  if(existing){
+    if(normalizedStatus === "Interested") existing.status = "Interested";
+    existing.name = supplier.name || existing.name;
+    existing.nameZh = supplier.nameZh || existing.nameZh || "";
+    existing.booth = supplier.booth || existing.booth || "";
+    existing.building = supplier.building || existing.building || "";
+    existing.score = supplier.score ?? existing.score ?? "";
+    existing.meetingTime = existing.meetingTime || "";
+  }else{
+    shortlist.push({
+      id: supplier.id,
+      name: supplier.name || "",
+      nameZh: supplier.nameZh || "",
+      booth: supplier.booth || "",
+      building: supplier.building || "",
+      score: supplier.score ?? "",
+      status: normalizedStatus,
+      meetingTime: ""
+    });
+  }
+  persistShortlist();
+}
+
+function updateShortlistMeeting(supplierId, meetingTime){
+  const existing = shortlist.find(item => item.id === supplierId);
+  if(existing){
+    existing.status = "Interested";
+    existing.meetingTime = meetingTime;
+    persistShortlist();
+  }
+}
+
+function removeFromShortlist(id){
+  shortlist = shortlist.filter(item => item.id !== id);
+  persistShortlist();
+}
+
+function clearShortlist(){
+  if(!shortlist.length) return;
+  if(confirm("Clear all suppliers from your shortlist?")){
+    shortlist = [];
+    persistShortlist();
+  }
+}
+
+function renderShortlist(){
+  const list = document.getElementById("shortlistList");
+  const count = document.getElementById("shortlistCount");
+  if(!list || !count) return;
+
+  count.textContent = shortlist.length;
+
+  if(!shortlist.length){
+    list.className = "shortlist-empty";
+    list.innerHTML = "No suppliers saved yet.";
+    return;
+  }
+
+  list.className = "";
+  list.innerHTML = shortlist.map(item => {
+    const boothParts = [];
+    if(item.booth) boothParts.push(`Booth ${escapeHtml(item.booth)}`);
+    if(item.building) boothParts.push(escapeHtml(item.building));
+    if(item.score !== "" && item.score != null) boothParts.push(`Match ${escapeHtml(String(item.score))}%`);
+    const meta = boothParts.join(" · ");
+    const cls = item.status === "Interested" ? " interested" : "";
+    const meeting = item.meetingTime ? `<div class="shortlist-meta">Meeting: ${escapeHtml(item.meetingTime)}</div>` : "";
+    return `
+      <div class="shortlist-item">
+        <div>
+          <div class="shortlist-name">${escapeHtml(item.name)}</div>
+          <div class="shortlist-meta">${meta}</div>
+          ${meeting}
+          <span class="shortlist-status${cls}">${escapeHtml(item.status)}</span>
+        </div>
+        <button class="shortlist-remove" type="button" aria-label="Remove ${escapeHtml(item.name)}" onclick='removeFromShortlist(${JSON.stringify(item.id)})'>×</button>
+      </div>`;
+  }).join("");
+}
+
+function printShortlist(){
+  if(!shortlist.length){
+    alert("Your shortlist is empty.");
+    return;
+  }
+  window.print();
+}
+
+function canvasRoundRect(ctx, x, y, w, h, r){
+  const radius = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+function wrapCanvasText(ctx, text, maxWidth){
+  const words = String(text || "").split(/\s+/);
+  const lines = [];
+  let line = "";
+  words.forEach(word=>{
+    const test = line ? line + " " + word : word;
+    if(ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = word;
+    }else{
+      line = test;
+    }
+  });
+  if(line) lines.push(line);
+  return lines.length ? lines : [""];
+}
+
+async function downloadShortlistImage(){
+  if(!shortlist.length){
+    alert("Your shortlist is empty.");
+    return;
+  }
+
+  const scale = 2;
+  const width = 900;
+  const pad = 56;
+  const contentWidth = width - pad * 2;
+
+  // Measure dynamic height first.
+  const measure = document.createElement("canvas").getContext("2d");
+  measure.font = '700 24px Arial, sans-serif';
+
+  let height = 245;
+  shortlist.forEach(item=>{
+    const nameLines = wrapCanvasText(measure, item.name, contentWidth - 80);
+    height += 105 + Math.max(0, nameLines.length - 1) * 30 + (item.meetingTime ? 28 : 0);
+  });
+  height += 95;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+
+  // Background
+  ctx.fillStyle = "#f4f9fc";
+  ctx.fillRect(0, 0, width, height);
+
+  // Card
+  ctx.fillStyle = "#ffffff";
+  canvasRoundRect(ctx, 22, 22, width - 44, height - 44, 22);
+  ctx.fill();
+
+  let y = 72;
+
+  ctx.fillStyle = "#34705f";
+  ctx.font = '700 14px Arial, sans-serif';
+  ctx.fillText("IMTS 2026 · TAIWAN FLAGSHIP SHOWCASE", pad, y);
+
+  y += 42;
+  ctx.fillStyle = "#17364a";
+  ctx.font = '700 34px Arial, sans-serif';
+  ctx.fillText("Your Taiwan Supplier Shortlist", pad, y);
+
+  y += 32;
+  ctx.fillStyle = "#6f7f8a";
+  ctx.font = '400 16px Arial, sans-serif';
+  ctx.fillText("Suppliers saved for your visit at IMTS 2026.", pad, y);
+
+  y += 35;
+  ctx.strokeStyle = "#d9e4ea";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, y);
+  ctx.lineTo(width - pad, y);
+  ctx.stroke();
+
+  shortlist.forEach((item, index)=>{
+    y += 35;
+
+    ctx.fillStyle = "#17364a";
+    ctx.font = '700 22px Arial, sans-serif';
+    const nameLines = wrapCanvasText(ctx, item.name, contentWidth - 70);
+    nameLines.forEach(line=>{
+      ctx.fillText(line, pad, y);
+      y += 28;
+    });
+
+    const meta = [];
+    if(item.booth) meta.push(`Booth ${item.booth}`);
+    if(item.building) meta.push(item.building);
+    if(item.score !== "" && item.score != null) meta.push(`Match ${item.score}%`);
+
+    ctx.fillStyle = "#6f7f8a";
+    ctx.font = '400 15px Arial, sans-serif';
+    if(meta.length){
+      ctx.fillText(meta.join(" · "), pad, y + 3);
+      y += 27;
+    }
+
+    if(item.meetingTime){
+      ctx.fillStyle = "#315d72";
+      ctx.font = '700 15px Arial, sans-serif';
+      ctx.fillText(`Meeting: ${item.meetingTime}`, pad, y + 2);
+      y += 28;
+    }
+
+    const badgeText = item.status || "Saved";
+    ctx.font = '700 13px Arial, sans-serif';
+    const badgeW = ctx.measureText(badgeText).width + 24;
+    ctx.fillStyle = item.status === "Interested" ? "#e6f4ed" : "#eef5f8";
+    canvasRoundRect(ctx, pad, y, badgeW, 28, 14);
+    ctx.fill();
+    ctx.fillStyle = item.status === "Interested" ? "#27634d" : "#315d72";
+    ctx.fillText(badgeText, pad + 12, y + 19);
+    y += 48;
+
+    if(index < shortlist.length - 1){
+      ctx.strokeStyle = "#d9e4ea";
+      ctx.beginPath();
+      ctx.moveTo(pad, y);
+      ctx.lineTo(width - pad, y);
+      ctx.stroke();
+    }
+  });
+
+  y += 35;
+  ctx.fillStyle = "#6f7f8a";
+  ctx.font = '400 13px Arial, sans-serif';
+  ctx.fillText("Taiwan Supplier Matchmaking · IMTS 2026", pad, y);
+
+  const filename = "IMTS2026_Taiwan_Supplier_Shortlist.png";
+
+  // Prefer Web Share on supported mobile devices; otherwise download PNG.
+  canvas.toBlob(async blob=>{
+    if(!blob){
+      alert("Could not create the image. Please try again.");
+      return;
+    }
+
+    const file = new File([blob], filename, {type:"image/png"});
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if(isMobile && navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({
+          files:[file],
+          title:"IMTS 2026 Taiwan Supplier Shortlist"
+        });
+        return;
+      }catch(err){
+        if(err && err.name === "AbortError") return;
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  }, "image/png");
+}
+
+
+
 async function loadBookedSlots(supplierId){
   bookedMeetingSlots = new Set();
   if(!GOOGLE_SHEET_API_URL) return;
@@ -603,6 +940,7 @@ async function confirmTime(timeLabel, btn){
   bookingInProgress = false;
 
   if(status && status.success && status.bookedByThisSession){
+    updateShortlistMeeting(supplier.id, fullMeetingTime);
     document.getElementById("confirmMsg").textContent =
       `✓ Meeting request saved for ${fullMeetingTime}.`;
   }else if(status && status.success && status.booked){
@@ -619,6 +957,8 @@ async function confirmTime(timeLabel, btn){
 }
 
 loadSuppliers();
+
+renderShortlist();
 </script>
 </body>
 </html>
