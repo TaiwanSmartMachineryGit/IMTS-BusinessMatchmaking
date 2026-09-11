@@ -76,8 +76,9 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
     <aside class="card">
       <h3 style="margin-top:0">Buyer Information</h3>
 
-      <label>Company</label>
-      <input id="company" placeholder="Company name"/>
+      <label>Company <span style="color:#b42318">*</span></label>
+      <input id="company" placeholder="Company name" required aria-required="true"/>
+      <div id="companyError" style="display:none;margin-top:6px;color:#b42318;font-size:12px;font-weight:600">Company name is required.</div>
 
       <label>Buyer Type</label>
       <select id="buyerType">
@@ -354,7 +355,28 @@ function showInitialState(){
   document.getElementById("summary").textContent = `${suppliers.length} suppliers available`;
 }
 
+document.getElementById("company").addEventListener("input", function(){
+  if(this.value.trim()){
+    document.getElementById("companyError").style.display = "none";
+    this.style.borderColor = "";
+  }
+});
+
 function rerank(){
+  const companyInput = document.getElementById("company");
+  const companyError = document.getElementById("companyError");
+  const companyName = companyInput.value.trim();
+
+  if(!companyName){
+    companyError.style.display = "block";
+    companyInput.style.borderColor = "#b42318";
+    companyInput.focus();
+    return;
+  }
+
+  companyError.style.display = "none";
+  companyInput.style.borderColor = "";
+
   const selectedNeeds = selectedFrom("needs");
   const selectedIndustries = selectedFrom("industries");
   const selectedSolutions = selectedFrom("solutions");
