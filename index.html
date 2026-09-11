@@ -59,14 +59,14 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
 
 .shortlist-card{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 10px 24px rgba(32,67,86,.05)}
 .shortlist-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.shortlist-count{min-width:28px;height:28px;border-radius:8px;background:#e8f4ee;color:#2f6b57;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.shortlist-count{min-width:28px;height:28px;border-radius:8px;background:#e7f4f8;color:#155b86;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
 .shortlist-help{color:var(--muted);font-size:14px;margin:6px 0 12px}
 .shortlist-item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
 .shortlist-item:first-of-type{border-top:none}
 .shortlist-name{font-weight:800;color:var(--text)}
 .shortlist-meta{font-size:13px;color:var(--muted);margin-top:4px}
 .shortlist-status{display:inline-block;margin-top:7px;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#eef5f8;color:#315d72}
-.shortlist-status.interested{background:#e6f4ed;color:#27634d}
+.shortlist-status.interested{background:#dff3f7;color:#155b86}
 .shortlist-remove{border:0;background:transparent;color:#71808c;font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
 .shortlist-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 .shortlist-actions button{flex:1;min-width:170px}
@@ -193,12 +193,11 @@ background:conic-gradient(var(--good) calc(var(--score)*1%),#d5eaf1 0);position:
 <div class="shortlist-card" id="shortlistPrintArea">
   <div class="shortlist-head">
     <div>
-      <div class="eyebrow">03 / KEEP IN TOUCH</div>
       <h2 style="margin:4px 0 0">Your Shortlist</h2>
     </div>
     <div class="shortlist-count" id="shortlistCount">0</div>
   </div>
-  <div class="shortlist-help">Keep the suppliers you want to visit. Adding a supplier DOES NOT book a meeting.</div>
+  <div class="shortlist-help">Keep the suppliers you want to visit. Adding a supplier does not book a meeting.</div>
   <div id="shortlistList" class="shortlist-empty">No suppliers saved yet.</div>
   <div class="shortlist-actions">
     <button class="secondary" type="button" onclick="clearShortlist()">Clear list</button>
@@ -744,10 +743,10 @@ async function downloadShortlistImage(){
     const badgeText = item.status || "Saved";
     ctx.font = '700 13px Arial, sans-serif';
     const badgeW = ctx.measureText(badgeText).width + 24;
-    ctx.fillStyle = item.status === "Interested" ? "#e6f4ed" : "#eef5f8";
+    ctx.fillStyle = item.status === "Interested" ? "#dff3f7" : "#eef5f8";
     canvasRoundRect(ctx, pad, y, badgeW, 28, 14);
     ctx.fill();
-    ctx.fillStyle = item.status === "Interested" ? "#27634d" : "#315d72";
+    ctx.fillStyle = item.status === "Interested" ? "#155b86" : "#315d72";
     ctx.fillText(badgeText, pad + 12, y + 19);
     y += 48;
 
